@@ -7,3 +7,4 @@ langchain_tavily
 openai
 langchain-openai
 langchain-community
+IPykernel
