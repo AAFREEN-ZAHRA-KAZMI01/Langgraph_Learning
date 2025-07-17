@@ -62,14 +62,15 @@ Langgraph_Learning/
 ## 🧠 Architectures Overview
 
 ### 1. Basic Streaming Chatbot
-
-* Uses **LangGraph built-in streaming** with memory
-* Memory types:
-
-  * `ConversationBufferMemory`
-  * `ConversationSummaryMemory`
-* Real-time streaming replies with context saving
-
+This chatbot uses:
+- ✅ LangGraph's **built-in streaming**
+- ✅ Multiple **memory types** for context:
+  - `ConversationBufferMemory`
+  - `ConversationSummaryMemory`
+- ✅ **Tool Calling** with ReAct agent:
+  - 🌐 **Web Search Tool** using `Tavily`
+  - ➗ **Custom Multiplication Tool**
+- ✅ Uses **ReAct agent executor** to decide tool usage
 ---
 
 ### 2. Multi-Agent Architectures
