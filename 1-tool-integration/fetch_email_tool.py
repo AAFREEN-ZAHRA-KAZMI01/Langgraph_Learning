@@ -5,13 +5,12 @@ from email_utils import EMAIL_ADDRESS, get_llm, decode_email_subject, get_email_
 llm = get_llm()
 
 # 📥 Inbox Summary
-def fetch_email_summary():
+def fetch_email_summary(total_emails):
+    if total_emails <= 0:
+        return "❗ Invalid number entered."
+
     try:
         mail = imap_connect()
-
-        total_emails = int(input("📩 How many recent emails to summarize (e.g., 5, 10): "))
-        if total_emails <= 0:
-            return "❗ Invalid number entered."
 
         status, messages = mail.search(None, "ALL")
         mail_ids = messages[0].split()[-total_emails:]
@@ -141,7 +140,8 @@ def smart_email_bot():
             break
 
         elif choice == "summary":
-            summary = fetch_email_summary()
+            total_emails = int(input("📩 How many recent emails to summarize (e.g., 5, 10): "))
+            summary = fetch_email_summary(total_emails)
             print("\n📬 Summary:\n", summary)
             if input("❓ Ask anything about it? (y/n): ").lower() == "y":
                 q = input("💬 Your question: ")

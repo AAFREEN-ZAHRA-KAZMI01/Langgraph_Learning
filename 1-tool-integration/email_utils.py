@@ -21,7 +21,7 @@ SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 
 
-def get_llm(model_name="llama3-8b-8192", temperature=0.3):
+def get_llm(model_name="llama-3.1-8b-instant", temperature=0.3):
     return ChatGroq(temperature=temperature, groq_api_key=GROQ_API_KEY, model_name=model_name)
 
 

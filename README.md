@@ -45,7 +45,8 @@ AGENTICAI/
 ├── 1-multichatbot/
 │   ├── simpleaagentarchitecture.ipynb        # Linear: researcher -> writer
 │   ├── supervised_multiaiagents.ipynb        # Supervisor dynamically routes tasks
-│   └── Simple_Hierarchical_Multi-Agent_System.ipynb  # CEO -> team leads -> agents
+│   ├── Simple_Hierarchical_Multi-Agent_System.ipynb  # CEO -> team leads -> agents
+│   └── planner_critic_memory_agent.py  # Planner <-> Critic loop with memory (LangGraph)
 │
 ├── 1-tool-integration/
 │   ├── email_utils.py                  # Shared Gmail/LLM helpers used by the email + WhatsApp tools
@@ -53,7 +54,12 @@ AGENTICAI/
 │   ├── send_email_tool.py              # Send LLM replies via Gmail SMTP + LangSmith tracing
 │   ├── send_email_with_langsmith.py    # Standalone chat + email + LangSmith tracing demo
 │   ├── notion_tool.py                  # Generate/summarize docs and save to Notion
-│   └── whatsapp_tool.py                # Send LLM replies over WhatsApp via Twilio
+│   └── whatsapp_tool.py                # Send/receive LLM chat replies over WhatsApp via Twilio
+│
+├── webapp/                             # Flask dashboard (HTML/CSS, no JS framework)
+│   ├── app.py                          # Routes: chat, email, WhatsApp (+ inbound webhook), Notion
+│   ├── templates/index.html
+│   └── static/style.css
 │
 ├── LangChain-GoogleDocs/
 │   ├── google_drive_loader.py          # Download + summarize a Google Doc via service account
@@ -62,7 +68,7 @@ AGENTICAI/
 │   └── token.pickle                    # OAuth session cache (gitignored, not tracked)
 │
 ├── my_mcp/
-│   ├── tool_host.py                    # MCP tool host exposing `add` / `echo` tools (FastMCP)
+│   ├── tool_host.py                    # MCP tool host: add, echo, summarize_text, send_email_tool
 │   └── tool_client.py                  # LangGraph node that calls tool_host.py over MCP stdio
 │
 ├── tests/                              # pytest smoke tests (mock all network/API calls)
@@ -88,10 +94,11 @@ AGENTICAI/
 - **Simple**: `Start → Researcher → Writer → End`
 - **Supervisor**: `Start → Supervisor → [Researcher / Writer / Analyst] → Supervisor → End`
 - **Hierarchical**: CEO → Research/Writing team leads → individual agents
+- **Planner/Critic + memory** (`planner_critic_memory_agent.py`): `Start → Planner → Critic → (approved? End : back to Planner with the critic's feedback in memory)`, capped at `MAX_ITERATIONS`
 
 ---
 
-## 🛠️ Tool Integrations (`1-tool-integration/`, `LangChain-GoogleDocs/`, `my_mcp/`)
+## 🛠️ Tool Integrations (`1-tool-integration/`, `webapp/`, `LangChain-GoogleDocs/`, `my_mcp/`)
 
 | File | What it does |
 |---|---|
@@ -100,11 +107,14 @@ AGENTICAI/
 | `send_email_tool.py` | Sends LLM-generated replies via Gmail SMTP, traced with LangSmith |
 | `send_email_with_langsmith.py` | Standalone chatbot that optionally emails its response, with LangSmith tracing |
 | `notion_tool.py` | Generates documents with the LLM and saves/summarizes Notion pages |
-| `whatsapp_tool.py` | Sends LLM-generated chat replies over WhatsApp via Twilio |
+| `whatsapp_tool.py` | Sends LLM-generated chat replies over WhatsApp via Twilio; `generate_whatsapp_reply()` also powers the inbound webhook |
+| `webapp/app.py` | Flask dashboard: chat box + forms for email/WhatsApp/Notion, and the `/whatsapp/webhook` Twilio endpoint |
 | `google_drive_loader.py` | Downloads a Google Doc via a service account and summarizes it |
-| `my_mcp/tool_host.py` | FastMCP server exposing `add` and `echo` tools over stdio |
+| `my_mcp/tool_host.py` | FastMCP server exposing `add`, `echo`, `summarize_text`, and `send_email_tool` over stdio |
 | `my_mcp/tool_client.py` | LangGraph node that connects to `tool_host.py` via MCP and calls a tool |
 | `main.py` | Minimal MCP tool (`greet`) served via `FastMCP` |
+
+> **Note:** Groq deprecated `llama3-8b-8192` / `llama3-70b-8192` (used in earlier versions of this repo). Everything here now uses `llama-3.1-8b-instant` / `llama-3.3-70b-versatile`.
 
 ---
 
@@ -165,10 +175,19 @@ python 1-tool-integration/send_email_tool.py
 python 1-tool-integration/whatsapp_tool.py
 python 1-tool-integration/notion_tool.py
 python LangChain-GoogleDocs/google_drive_loader.py
-python my_mcp/tool_client.py   # launches tool_host.py over MCP stdio automatically
+python my_mcp/tool_client.py                                  # launches tool_host.py over MCP stdio automatically
+python 1-multichatbot/planner_critic_memory_agent.py "plan a birthday party"
 ```
 
 Notebooks under `1-BasicChatbot/` and `1-multichatbot/` can be run in Jupyter/VS Code.
+
+### Web dashboard
+
+```bash
+python webapp/app.py
+```
+
+Then open http://127.0.0.1:5000. To receive real WhatsApp messages, expose the app (e.g. with `ngrok http 5000`) and set the resulting `https://.../whatsapp/webhook` URL as your Twilio Sandbox's "When a message comes in" webhook.
 
 ---
 
@@ -185,9 +204,9 @@ Tests mock all network/API calls (IMAP, SMTP, Twilio, Notion) so they run withou
 
 ## 📌 Future Work
 
-- [ ] Add a web interface using Streamlit
-- [ ] Add more LangGraph agents (planner, critic, memory agent)
-- [ ] Expand `my_mcp/tool_host.py` with more tools
+- [ ] Add a memory-backed multi-turn chat to the web dashboard (currently stateless per request)
+- [ ] Add more MCP tools (Notion, WhatsApp) to `my_mcp/tool_host.py`
+- [ ] Add more LangGraph agent patterns (e.g. reflection, tool-using ReAct agent with memory)
 
 ---
 

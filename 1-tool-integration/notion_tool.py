@@ -10,16 +10,15 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 
 # Initialize LLM
-llm = ChatGroq(api_key=GROQ_API_KEY, model_name="llama3-70b-8192")
+llm = ChatGroq(api_key=GROQ_API_KEY, model_name="llama-3.3-70b-versatile")
 
 # Initialize Notion client
 notion = NotionClient(auth=NOTION_API_KEY)
 
-# --- Function to save to Notion ---
-def save_to_notion(title, content):
-    try:
-        page_id = input("📄 Enter Notion page ID where you want to save: ").strip()
 
+# --- Save content to an existing Notion page ---
+def save_to_notion(title, content, page_id):
+    try:
         notion.pages.create(
             parent={"type": "page_id", "page_id": page_id},
             properties={
@@ -34,61 +33,71 @@ def save_to_notion(title, content):
             }]
         )
         print(f"✅ Saved to Notion page titled '{title}'")
+        return True
     except Exception as e:
         print(f"❌ Error saving to Notion: {e}")
+        return False
 
-# --- Generate professional document ---
+
+# --- Generate a document for a topic ---
+def generate_document_content(topic):
+    prompt = f"Write a detailed professional technical documentation about: {topic}"
+    return llm.invoke([HumanMessage(content=prompt)]).content
+
+
 def generate_new_document():
     topic = input("🧠 Enter topic to generate document: ").strip()
     print("📄 Generating document...")
 
     try:
-        prompt = f"Write a detailed professional technical documentation about: {topic}"
-        result = llm.invoke([HumanMessage(content=prompt)]).content
+        result = generate_document_content(topic)
         print("\n📄 Generated Document:\n")
         print(result)
 
         save = input("\n💾 Save this document to Notion? (yes/no): ").strip().lower()
         if save == "yes":
             title = input("📌 Enter title for Notion page: ").strip()
-            save_to_notion(title, result)
+            page_id = input("📄 Enter Notion page ID where you want to save: ").strip()
+            save_to_notion(title, result, page_id)
     except Exception as e:
         print(f"❌ Error generating document: {e}")
 
-# --- Summarize a Notion document ---
+
+# --- Summarize an existing Notion document ---
+def _extract_text(notion_client, blocks):
+    text = []
+    for block in blocks:
+        t = block.get(block["type"], {}).get("rich_text", [])
+        text.extend([x.get("plain_text", "") for x in t])
+        if block.get("has_children"):
+            children = notion_client.blocks.children.list(block["id"]).get("results", [])
+            text.extend(_extract_text(notion_client, children))
+    return text
+
+
+def summarize_notion_page(page_id):
+    blocks = notion.blocks.children.list(block_id=page_id)["results"]
+    content = "\n".join(_extract_text(notion, blocks))
+    return llm.invoke([HumanMessage(content=f"Summarize this Notion content:\n\n{content}")]).content
+
+
 def summarize_existing_notion():
     page_id = input("📄 Enter Notion Page ID to summarize: ").strip()
 
     try:
-        blocks = notion.blocks.children.list(block_id=page_id)["results"]
+        summary = summarize_notion_page(page_id)
     except Exception as e:
-        print(f"❌ Failed to fetch Notion content: {e}")
+        print(f"❌ Failed to fetch/summarize Notion content: {e}")
         return
 
-    # Extract all text
-    def extract_text(blocks):
-        text = []
-        for block in blocks:
-            t = block.get(block["type"], {}).get("rich_text", [])
-            text.extend([x.get("plain_text", "") for x in t])
-            if block.get("has_children"):
-                children = notion.blocks.children.list(block["id"]).get("results", [])
-                text.extend(extract_text(children))
-        return text
+    print("\n📌 Summary:\n", summary)
 
-    content = "\n".join(extract_text(blocks))
+    save = input("\n💾 Save this summary to Notion? (yes/no): ").strip().lower()
+    if save == "yes":
+        title = input("📌 Enter title for summary page: ").strip()
+        target_page_id = input("📄 Enter Notion page ID where you want to save: ").strip()
+        save_to_notion(title, summary, target_page_id)
 
-    print("🧠 Generating summary...")
-    try:
-        summary = llm.invoke([HumanMessage(content=f"Summarize this Notion content:\n\n{content}")]).content
-        print("\n📌 Summary:\n", summary)
-
-        save = input("\n💾 Save this summary to Notion? (yes/no): ").strip().lower()
-        if save == "yes":
-            title = input("📌 Enter title for summary page: ").strip()
-            save_to_notion(title, summary)
-    except Exception as e:
-        print(f"❌ Error summarizing document: {e}")
 
 # --- Main menu loop ---
 def main():

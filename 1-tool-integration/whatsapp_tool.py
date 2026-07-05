@@ -25,6 +25,11 @@ def send_whatsapp_message(body, to_number):
         return False
 
 
+def generate_whatsapp_reply(user_input):
+    """Ask the LLM for a reply. Shared by the CLI chatbot and the inbound webhook."""
+    return llm([HumanMessage(content=user_input)]).content
+
+
 def main():
     print("🤖 Welcome to the Groq-Powered WhatsApp Chatbot!")
     print("Type your message. Type 'exit' to quit.\n")
@@ -35,13 +40,13 @@ def main():
             print("👋 Goodbye!")
             break
 
-        response = llm([HumanMessage(content=user_input)])
-        print("🤖 Bot:", response.content)
+        reply = generate_whatsapp_reply(user_input)
+        print("🤖 Bot:", reply)
 
         send_choice = input("📱 Send this reply via WhatsApp? (y/n): ").strip().lower()
         if send_choice == "y":
             to_number = input("📞 Enter recipient's WhatsApp number (e.g. whatsapp:+91XXXXXXXXXX): ").strip()
-            send_whatsapp_message(response.content, to_number)
+            send_whatsapp_message(reply, to_number)
 
 
 if __name__ == "__main__":

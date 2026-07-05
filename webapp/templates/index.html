@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgenticAI Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>🤖 AgenticAI Dashboard</h1>
+    <p>Chat with Groq's LLaMA3, and trigger the email / WhatsApp / Notion tools.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>💬 Chat</h2>
+      <form method="post" action="/chat">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="3" required>{{ chat_message or "" }}</textarea>
+        <button type="submit">Send</button>
+      </form>
+      {% if chat_reply %}
+      <div class="result">
+        <strong>Bot:</strong>
+        <p>{{ chat_reply }}</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>📧 Email</h2>
+
+      <form method="post" action="/email/summary">
+        <label for="count">Summarize last N inbox emails</label>
+        <input id="count" name="count" type="number" min="1" value="5">
+        <button type="submit">Summarize</button>
+      </form>
+      {% if email_summary_result %}
+      <div class="result"><pre>{{ email_summary_result }}</pre></div>
+      {% endif %}
+
+      <form method="post" action="/email/auto-reply">
+        <button type="submit">Auto-reply to unread emails</button>
+      </form>
+      {% if email_auto_reply_result %}
+      <div class="result"><pre>{{ email_auto_reply_result }}</pre></div>
+      {% endif %}
+
+      <form method="post" action="/email/send">
+        <label for="to_email">To</label>
+        <input id="to_email" name="to_email" type="email" required>
+        <label for="subject">Subject</label>
+        <input id="subject" name="subject" type="text" required>
+        <label for="body">Body</label>
+        <textarea id="body" name="body" rows="3" required></textarea>
+        <button type="submit">Send Email</button>
+      </form>
+      {% if email_send_result %}
+      <div class="result">{{ email_send_result }}</div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>📱 WhatsApp</h2>
+      <form method="post" action="/whatsapp/send">
+        <label for="to_number">To (whatsapp:+91XXXXXXXXXX)</label>
+        <input id="to_number" name="to_number" type="text" required>
+        <label for="wa_message">Message</label>
+        <textarea id="wa_message" name="message" rows="3" required></textarea>
+        <button type="submit">Send WhatsApp Message</button>
+      </form>
+      {% if whatsapp_send_result %}
+      <div class="result">{{ whatsapp_send_result }}</div>
+      {% endif %}
+      <p class="hint">Incoming messages are auto-answered by the LLM via the <code>/whatsapp/webhook</code> endpoint (configure it as your Twilio sandbox webhook URL).</p>
+    </section>
+
+    <section class="card">
+      <h2>📘 Notion</h2>
+      <form method="post" action="/notion/generate">
+        <label for="topic">Topic</label>
+        <input id="topic" name="topic" type="text" required>
+        <label for="page_id">Notion page ID to save under (optional)</label>
+        <input id="page_id" name="page_id" type="text">
+        <button type="submit">Generate Document</button>
+      </form>
+      {% if notion_result %}
+      <div class="result"><pre>{{ notion_result }}</pre></div>
+      {% endif %}
+      {% if notion_saved_result %}
+      <div class="result">{{ notion_saved_result }}</div>
+      {% endif %}
+    </section>
+  </main>
+
+  <footer>
+    <p>AgenticAI &mdash; LangGraph Learning</p>
+  </footer>
+</body>
+</html>

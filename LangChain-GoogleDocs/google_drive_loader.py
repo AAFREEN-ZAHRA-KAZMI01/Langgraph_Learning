@@ -16,7 +16,7 @@ load_dotenv()
 SERVICE_ACCOUNT_FILE = "credentials.json"
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 FILE_ID = "1YW8GoolzMUYpM1AHXxU3bIu5xne551QjoesJQt2M5YQ"
-MODEL_NAME = "llama3-8b-8192"
+MODEL_NAME = "llama-3.1-8b-instant"
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
