@@ -1,8 +1,6 @@
-# Langgraph_Learning
-````markdown
 # 🤖 LangGraph Learning — Aafreen Zahra Kazmi
 
-Welcome to **LangGraph Learning**, where I explore and implement different AI agent-based architectures using **LangChain**, **LangGraph**, **streaming**, **tool integrations**, and more. This repository is structured in phases, starting from basic chatbot concepts to advanced multi-agent systems using **Groq's LLaMA3** and LangChain agents.
+Welcome to **LangGraph Learning**, where I explore and implement different AI agent-based architectures using **LangChain**, **LangGraph**, **MCP**, streaming, and tool integrations. This repository is structured in phases, starting from basic chatbot concepts to multi-agent systems and real-world tool integrations (email, Notion, Google Docs) powered by **Groq's LLaMA3**.
 
 ---
 
@@ -11,12 +9,10 @@ Welcome to **LangGraph Learning**, where I explore and implement different AI ag
 - [🔍 About the Project](#-about-the-project)
 - [📁 Folder Structure](#-folder-structure)
 - [🧠 Architectures Overview](#-architectures-overview)
-  - [1. Basic Streaming Chatbot](#1-basic-streaming-chatbot)
-  - [2. Multi-Agent Architectures](#2-multi-agent-architectures)
-  - [3. Tool Integration](#3-tool-integration)
+- [🛠️ Tool Integrations](#️-tool-integrations)
 - [⚙️ Setup & Installation](#️-setup--installation)
-- [▶️ How to Run](#️-how-to-run)
 - [🔐 Environment Variables](#-environment-variables)
+- [▶️ How to Run](#️-how-to-run)
 - [📌 Future Work](#-future-work)
 - [📬 Contact](#-contact)
 
@@ -25,185 +21,150 @@ Welcome to **LangGraph Learning**, where I explore and implement different AI ag
 ## 🔍 About the Project
 
 This repository is my personal LangGraph learning journey. It explores:
-- Streaming chatbot creation
-- Using built-in LangGraph memory features
-- Multiple AI agent collaboration
-- Email tool integration
-- Groq’s blazing-fast LLaMA3 models
-
-> Built entirely using **Python + LangChain + LangGraph + Groq + Email SMTP tools**
+- Streaming chatbots with memory
+- Multi-agent collaboration (simple, supervisor, hierarchical)
+- Tool integration: Gmail, Notion, WhatsApp/Twilio, Google Drive/Docs
+- MCP (Model Context Protocol) tool host/client examples
+- Groq's fast LLaMA3 models via LangChain
 
 ---
 
 ## 📁 Folder Structure
 
 ```bash
-Langgraph_Learning/
+AGENTICAI/
 │
-├── 1_Basic_Chatbot/                 # Simple streaming chatbot with memory
-│   ├── main.py                      # Basic chatbot logic
-│   └── memory_streaming.py         # Streaming + Memory saver example
+├── 1-BasicChatbot/
+│   └── 1-basicchatbot.ipynb            # Streaming chatbot with memory + tool calling
 │
-├── 2_Multi_AI_Agent/               # Three types of multi-agent architectures
-│   ├── simple_multi_agent.py       # Linear pipeline: researcher → writer
-│   ├── supervisor_multi_agent.py   # Supervisor chooses the right agent
-│   └── hierarchical_multi_agent.py # Hierarchical agents with team leads
+├── 1-multichatbot/
+│   ├── simpleaagentarchitecture.ipynb        # Linear: researcher -> writer
+│   ├── supervised_multiaiagents.ipynb        # Supervisor dynamically routes tasks
+│   └── Simple_Hierarchical_Multi-Agent_System.ipynb  # CEO -> team leads -> agents
 │
-├── 3_Tool_Integration/             
-│   └── email_tool_agent.py         # Email sending using agent and SMTP
+├── 1.tool_integration/
+│   ├── fetch_email_tool.py             # Inbox summary, keyword search, auto-reply bot
+│   ├── send_email_tool.py              # Send LLM replies via Gmail SMTP + LangSmith tracing
+│   ├── send_email_with_langsmith.py.py # Standalone chat + email + LangSmith tracing demo
+│   ├── notion_tool.py                  # Generate/summarize docs and save to Notion
+│   └── whatsapp_tool.py                # WhatsApp/Twilio integration (WIP)
 │
-├── requirements.txt                # All dependencies listed
-├── .env                            # Secret keys (Groq API, SMTP, etc.)
+├── LangChain-GoogleDocs/
+│   ├── google_drive_loader.py          # Download + summarize a Google Doc via service account
+│   ├── requirements1.txt
+│   ├── credentials.json                # Google service-account key (gitignored, not tracked)
+│   └── token.pickle                    # OAuth session cache (gitignored, not tracked)
+│
+├── my_mcp/
+│   ├── tool_host.py                    # MCP tool host (currently empty scaffold)
+│   └── tool_client.py                  # LangGraph node that calls an MCP tool via MCPClient
+│
+├── main.py                             # Minimal MCP tool example (`greet`)
+├── pyproject.toml / requirements.txt / uv.lock
+├── .env.example                        # Template for required environment variables
 └── README.md
-````
+```
 
 ---
 
 ## 🧠 Architectures Overview
 
-### 1. Basic Streaming Chatbot
-This chatbot uses:
-- ✅ LangGraph's **built-in streaming**
-- ✅ Multiple **memory types** for context:
-  - `ConversationBufferMemory`
-  - `ConversationSummaryMemory`
-- ✅ **Tool Calling** with ReAct agent:
-  - 🌐 **Web Search Tool** using `Tavily`
-  - ➗ **Custom Multiplication Tool**
-- ✅ Uses **ReAct agent executor** to decide tool usage
----
+### 1. Basic Streaming Chatbot (`1-BasicChatbot/`)
+- LangGraph's built-in streaming
+- Memory types: `ConversationBufferMemory`, `ConversationSummaryMemory`
+- ReAct agent with a Tavily web search tool and a custom multiplication tool
 
-### 2. Multi-Agent Architectures
-
-#### a. `simple_multi_agent.py` — Linear Flow
-
-```text
-Start → Researcher → Writer → End
-```
-
-* Each step is defined as a node in LangGraph.
-* Fixed pipeline, perfect for small static tasks.
+### 2. Multi-Agent Architectures (`1-multichatbot/`)
+- **Simple**: `Start → Researcher → Writer → End`
+- **Supervisor**: `Start → Supervisor → [Researcher / Writer / Analyst] → Supervisor → End`
+- **Hierarchical**: CEO → Research/Writing team leads → individual agents
 
 ---
 
-#### b. `supervisor_multi_agent.py` — Dynamic Supervisor Logic
+## 🛠️ Tool Integrations (`1.tool_integration/`, `LangChain-GoogleDocs/`, `my_mcp/`)
 
-```text
-Start → Supervisor → [Researcher / Writer / Analyst] → Supervisor → End
-```
-
-* The **supervisor agent** dynamically routes tasks.
-* Can handle flexible requests like:
-
-  * "Do market research"
-  * "Write summary"
-  * "Analyze technical data"
-
----
-
-#### c. `hierarchical_multi_agent.py` — Full Organization Tree
-
-**Simple Hierarchical Multi-Agent System using Groq**
-
-```text
-CEO
-├── Research Team Leader
-│   ├── Data Researcher
-│   └── Market Researcher
-└── Writing Team Leader
-    ├── Technical Writer
-    └── Summary Writer
-```
-
-* The CEO handles high-level tasks.
-* Each team lead delegates sub-tasks to agents below them.
-* Mimics a real-world organization chart.
-
----
-
-### 3. Tool Integration (Email)
-
-* `email_tool_agent.py` uses **LangChain Tool Invocation**.
-* It integrates **Gmail SMTP** to send chatbot responses directly to a user email.
-* Uses secure `.env` to store sensitive credentials.
+| File | What it does |
+|---|---|
+| `fetch_email_tool.py` | IMAP inbox summary, keyword search, and an LLM-judged auto-reply bot over Gmail |
+| `send_email_tool.py` | Sends LLM-generated replies via Gmail SMTP, traced with LangSmith |
+| `send_email_with_langsmith.py.py` | Standalone chatbot that optionally emails its response, with LangSmith tracing |
+| `notion_tool.py` | Generates documents with the LLM and saves/summarizes Notion pages |
+| `whatsapp_tool.py` | Twilio/WhatsApp integration (work in progress) |
+| `google_drive_loader.py` | Downloads a Google Doc via a service account and summarizes it |
+| `my_mcp/tool_client.py` | LangGraph node that calls a tool exposed by an MCP host |
+| `main.py` | Minimal MCP tool (`greet`) run via `mcp.core.run` |
 
 ---
 
 ## ⚙️ Setup & Installation
 
 ### 1. Clone the repository
-
 ```bash
 git clone https://github.com/AAFREEN-ZAHRA-KAZMI01/Langgraph_Learning.git
 cd Langgraph_Learning
 ```
 
-### 2. Create Virtual Environment
-
+### 2. Create a virtual environment
 ```bash
-python -m venv venv
+python -m venv .venv
 ```
 
-### 3. Activate Virtual Environment
+### 3. Activate it
+- **Windows**: `.venv\Scripts\activate`
+- **Mac/Linux**: `source .venv/bin/activate`
 
-* **Windows**:
-
-  ```bash
-  venv\Scripts\activate
-  ```
-* **Mac/Linux**:
-
-  ```bash
-  source venv/bin/activate
-  ```
-
-### 4. Install Requirements
-
+### 4. Install dependencies
 ```bash
 pip install -r requirements.txt
-```
-
----
-
-## ▶️ How to Run
-
-Choose any file from the folders and run it with:
-
-```bash
-python filename.py
-```
-
-Examples:
-
-```bash
-python 1_Basic_Chatbot/main.py
-python 2_Multi_AI_Agent/supervisor_multi_agent.py
-python 3_Tool_Integration/email_tool_agent.py
+# or, if using uv:
+uv sync
 ```
 
 ---
 
 ## 🔐 Environment Variables
 
-Create a `.env` file in the root folder like this:
+Copy [`.env.example`](.env.example) to `.env` and fill in your own values:
 
-```env
-GROQ_API_KEY=your_groq_key_here
-EMAIL=your_email_here
-APP_PASSWORD=your_app_password
-TAVILY_API_KEY=your_tavily_key_here
+```bash
+cp .env.example .env
 ```
 
-> ⚠️ Do **NOT** share these keys publicly. Always use `.env` file for secret keys.
+| Variable | Used by | Notes |
+|---|---|---|
+| `GROQ_API_KEY` | all LLM calls | Groq API key |
+| `EMAIL_ADDRESS` / `EMAIL_PASSWORD` | email tools | Use a Gmail **App Password**, not your real password |
+| `SMTP_SERVER` / `SMTP_PORT` | `fetch_email_tool.py` | Optional, defaults to Gmail SMTP |
+| `LANGCHAIN_API_KEY` / `LANGCHAIN_PROJECT` / `LANGCHAIN_ENDPOINT` | LangSmith tracing | Optional but recommended for debugging traces |
+| `NOTION_API_KEY` | `notion_tool.py` | Notion integration secret |
+| `TAVILY_API_KEY` | chatbot notebooks | Web search tool |
+
+For `LangChain-GoogleDocs/google_drive_loader.py`, you also need a Google **service-account** `credentials.json` placed at `LangChain-GoogleDocs/credentials.json`. This file is not tracked in git (it contains a secret) — generate your own from the [Google Cloud Console](https://console.cloud.google.com/).
+
+> ⚠️ Never commit `.env`, `credentials.json`, or `token.pickle`. All three are gitignored.
+
+---
+
+## ▶️ How to Run
+
+```bash
+python main.py
+python 1.tool_integration/fetch_email_tool.py
+python 1.tool_integration/send_email_tool.py
+python 1.tool_integration/notion_tool.py
+python LangChain-GoogleDocs/google_drive_loader.py
+```
+
+Notebooks under `1-BasicChatbot/` and `1-multichatbot/` can be run in Jupyter/VS Code.
 
 ---
 
 ## 📌 Future Work
 
-* [ ] Add Web Interface using **Streamlit**
-* [ ] Add **Voice Input** using OpenAI Whisper
-* [ ] Integrate Google Calendar or Notion tool
-* [ ] Add more LangGraph agents (planner, critic, memory agent)
+- [ ] Add a web interface using Streamlit
+- [ ] Finish the WhatsApp/Twilio tool
+- [ ] Flesh out the MCP tool host (`my_mcp/tool_host.py`)
+- [ ] Add more LangGraph agents (planner, critic, memory agent)
 
 ---
 
@@ -211,15 +172,3 @@ TAVILY_API_KEY=your_tavily_key_here
 
 Made with ❤️ by [Aafreen Zahra Kazmi](https://github.com/AAFREEN-ZAHRA-KAZMI01)
 For queries: ✉️ [aafreenzk1214@gmail.com](mailto:aafreenzk1214@gmail.com)
-
----
-
-## ⭐️ Show some love!
-
-If you liked this repo:
-
-* Give it a ⭐️ star
-* Fork it for learning
-* Share with AI enthusiasts 🚀
-
-
