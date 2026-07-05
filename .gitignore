@@ -10,3 +10,7 @@ wheels/
 .venv
 
 .env
+
+# OAuth secrets / tokens
+LangChain-GoogleDocs/credentials.json
+LangChain-GoogleDocs/token.pickle

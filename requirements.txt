@@ -11,3 +11,5 @@ IPykernel
 twilio 
 flask 
 notion-client
+mcp
+mcp[cli]

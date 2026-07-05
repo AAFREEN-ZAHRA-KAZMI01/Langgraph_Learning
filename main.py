@@ -1,6 +1,9 @@
-def main():
-    print("Hello from agenticai!")
+from mcp import tool
+from mcp.core import run
 
+@tool()
+async def greet(name: str) -> str:
+    return f"Hello, {name}!"
 
 if __name__ == "__main__":
-    main()
+    run()
