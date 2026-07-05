@@ -1,32 +1,13 @@
-import os
-import imaplib
-import smtplib
 import email
-from email.mime.text import MIMEText
-from email.header import decode_header
-from dotenv import load_dotenv
-from langchain_groq import ChatGroq
 from langchain.schema import HumanMessage
+from email_utils import EMAIL_ADDRESS, get_llm, decode_email_subject, get_email_body, imap_connect, smtp_connect
 
-# 🔐 Load .env credentials
-load_dotenv()
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
-# 🤖 Init LLM
-llm = ChatGroq(
-    temperature=0.3,
-    groq_api_key=GROQ_API_KEY,
-    model_name="llama3-8b-8192"
-)
+llm = get_llm()
 
 # 📥 Inbox Summary
 def fetch_email_summary():
     try:
-        mail = imaplib.IMAP4_SSL("imap.gmail.com")
-        mail.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        mail.select("inbox")
+        mail = imap_connect()
 
         total_emails = int(input("📩 How many recent emails to summarize (e.g., 5, 10): "))
         if total_emails <= 0:
@@ -40,8 +21,7 @@ def fetch_email_summary():
             _, data = mail.fetch(num, "(RFC822)")
             msg = email.message_from_bytes(data[0][1])
 
-            subject, encoding = decode_header(msg["Subject"])[0]
-            subject = subject.decode(encoding or "utf-8", errors="ignore") if isinstance(subject, bytes) else subject
+            subject = decode_email_subject(msg)
             from_ = msg.get("From")
 
             summary += f"From: {from_}\nSubject: {subject}\n" + "-" * 30 + "\n"
@@ -55,9 +35,7 @@ def fetch_email_summary():
 # 🔍 Search emails by keyword
 def fetch_specific_email(keyword):
     try:
-        mail = imaplib.IMAP4_SSL("imap.gmail.com")
-        mail.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        mail.select("inbox")
+        mail = imap_connect()
 
         status, messages = mail.search(None, "ALL")
         mail_ids = messages[0].split()
@@ -69,20 +47,9 @@ def fetch_specific_email(keyword):
             _, data = mail.fetch(num, "(RFC822)")
             msg = email.message_from_bytes(data[0][1])
 
-            subject, encoding = decode_header(msg["Subject"])[0]
-            subject = subject.decode(encoding or "utf-8", errors="ignore") if isinstance(subject, bytes) else subject
+            subject = decode_email_subject(msg)
             from_ = msg.get("From")
-            full_content = ""
-
-            if msg.is_multipart():
-                for part in msg.walk():
-                    if part.get_content_type() == "text/plain":
-                        body = part.get_payload(decode=True)
-                        if body:
-                            full_content = body.decode(errors="ignore")
-                            break
-            else:
-                full_content = msg.get_payload(decode=True).decode(errors="ignore")
+            full_content = get_email_body(msg)
 
             if keyword.lower() in subject.lower() or keyword.lower() in from_.lower():
                 matched_emails.append(
@@ -98,18 +65,14 @@ def fetch_specific_email(keyword):
 # 🤖 Auto-reply to unread important inbox emails
 def auto_reply_to_unread():
     try:
-        mail = imaplib.IMAP4_SSL("imap.gmail.com")
-        mail.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        mail.select("inbox")
+        mail = imap_connect()
 
         status, messages = mail.search(None, "UNSEEN")
         mail_ids = messages[0].split()
         if not mail_ids:
             return "✅ No unread emails found."
 
-        smtp = smtplib.SMTP(os.getenv("SMTP_SERVER", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", 587)))
-        smtp.starttls()
-        smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        smtp = smtp_connect()
 
         replies = []
         skip_keywords = ["noreply", "no-reply", "mailer", "support", "newsletter", "update", "notifications", "donotreply"]
@@ -118,24 +81,14 @@ def auto_reply_to_unread():
             _, data = mail.fetch(num, "(RFC822)")
             msg = email.message_from_bytes(data[0][1])
 
-            subject, encoding = decode_header(msg["Subject"])[0]
-            subject = subject.decode(encoding or "utf-8", errors="ignore") if isinstance(subject, bytes) else subject
+            subject = decode_email_subject(msg)
             from_ = msg.get("From")
             sender_email = email.utils.parseaddr(from_)[1]
 
             if EMAIL_ADDRESS.lower() in sender_email.lower() or any(x in sender_email.lower() for x in skip_keywords):
                 continue
 
-            content = ""
-            if msg.is_multipart():
-                for part in msg.walk():
-                    if part.get_content_type() == "text/plain":
-                        body = part.get_payload(decode=True)
-                        if body:
-                            content = body.decode(errors="ignore")
-                            break
-            else:
-                content = msg.get_payload(decode=True).decode(errors="ignore")
+            content = get_email_body(msg)
 
             # 🧠 Ask LLM if reply is needed
             judgment_prompt = f"""You're a smart assistant. Read this email and answer only: yes or no.
@@ -154,6 +107,7 @@ Message:
             reply_prompt = f"Write a short, polite, professional reply to this email:\n\nSubject: {subject}\n\n{content}"
             reply_text = llm([HumanMessage(content=reply_prompt)]).content
 
+            from email.mime.text import MIMEText
             reply_msg = MIMEText(reply_text)
             reply_msg["Subject"] = "Re: " + subject
             reply_msg["From"] = EMAIL_ADDRESS

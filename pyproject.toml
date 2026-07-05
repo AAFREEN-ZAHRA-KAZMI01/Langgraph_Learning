@@ -18,7 +18,7 @@ dependencies = [
     "langchain-groq>=0.3.6",
     "langchain-openai>=0.3.28",
     "langchain-tavily>=0.2.10",
-    "langgraph[mcp]>=0.5.3",
+    "langgraph>=0.5.3",
     "langsmith>=0.4.8",
     "mcp[cli]>=1.12.1",
     "notion-client>=2.4.0",
@@ -29,3 +29,16 @@ dependencies = [
     "twilio>=9.7.0",
     "unstructured>=0.18.11",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.5.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+exclude = ["LangChain-GoogleDocs", "1-BasicChatbot", "1-multichatbot", "*.ipynb"]
